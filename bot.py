@@ -2,7 +2,7 @@ import os
 import telebot
 from flask import Flask, request
 
-BOT_TOKEN = os.environ.get('BOT_TOKEN')
+BOT_TOKEN = os.environ.get('8934313511:AAHqXMCYbC_eoiA_8vo6pFhktbmByA1zsJc')
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
@@ -35,4 +35,4 @@ def index():
     return 'Bot is running', 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))import
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
