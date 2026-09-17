@@ -35,10 +35,10 @@ def echo(message):
 
 @app.route('/' + BOT_TOKEN, methods=['POST'])
 def webhook():
-    print(f"Webhook hit! Data: {request.data[:200]}", flush=True)
+    raw = request.stream.read()
+    print(f"Webhook hit! Len: {len(raw)}", flush=True)
     try:
-        update = telebot.types.Update.de_json(request.stream.read().decode('utf-8'))
-        print(f"Update parsed: {update}", flush=True)
+        update = telebot.types.Update.de_json(raw.decode('utf-8'))
         bot.process_new_updates([update])
     except Exception as e:
         print(f"ERROR: {e}", flush=True)
