@@ -3,61 +3,42 @@ import telebot
 from flask import Flask, request
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '').strip()
-print(f"BOT_TOKEN loaded: {BOT_TOKEN[:10]}...", flush=True)
-
 bot = telebot.TeleBot(BOT_TOKEN)
-bot.remove_webhook()  # на всякий случай
-
 app = Flask(__name__)
 
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    print(f"Got /start from {message.chat.id}", flush=True)
-    bot.reply_to(message, f'Привет, {message.from_user.first_name}! 👋')
+def send(chat_id, text):
+    """Отправляем сообщение через Telegram API напрямую."""
+    import requests
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, json={"chat_id": chat_id, "text": text})
 
 
-@bot.message_handler(commands=['help'])
-def help_cmd(message):
-    print(f"Got /help", flush=True)
-    bot.reply_to(message, 'Команды:\n/start — поздороваться\n/help — помощь')
-
-
-@bot.message_handler(func=lambda m: True)
-def echo(message):
-    print(f"Got message: {message.text}", flush=True)
-    text = message.text.lower()
-    if 'привет' in text:
-        bot.reply_to(message, 'Привет! 😊')
-    elif 'как дела' in text:
-        bot.reply_to(message, 'Всё отлично! А у тебя?')
-    else:
-        bot.reply_to(message, f'Ты написал: {message.text}')
-
-
-@app.route('/', methods=['POST'])
-def webhook_root():
+@app.route('/webhook', methods=['POST'])
+def webhook():
     raw = request.stream.read()
-    print(f"Webhook on / Len: {len(raw)}", flush=True)
+    print(f"Webhook hit! Len: {len(raw)}", flush=True)
     try:
-        update = telebot.types.Update.de_json(raw.decode('utf-8'))
-        print(f"Update parsed, message: {update.message}", flush=True)
-        bot.process_new_updates([update])
-        print(f"Processed OK", flush=True)
-    except Exception as e:
-        print(f"ERROR: {e}", flush=True)
-    return 'ok', 200
+        data = __import__('json').loads(raw.decode('utf-8'))
+        if 'message' in data:
+            msg = data['message']
+            chat_id = msg['chat']['id']
+            text = msg.get('text', '')
+            name = msg['from'].get('first_name', 'друг')
+            print(f"Got message: {text} from {name}", flush=True)
 
+            if text == '/start':
+                send(chat_id, f'Привет, {name}! 👋')
+            elif text == '/help':
+                send(chat_id, 'Команды:\n/start — поздороваться\n/help — помощь')
+            elif 'привет' in text.lower():
+                send(chat_id, 'Привет! 😊')
+            elif 'как дела' in text.lower():
+                send(chat_id, 'Всё отлично! А у тебя?')
+            elif text:
+                send(chat_id, f'Ты написал: {text}')
 
-@app.route('/' + BOT_TOKEN, methods=['POST'])
-def webhook_token():
-    raw = request.stream.read()
-    print(f"Webhook on /TOKEN Len: {len(raw)}", flush=True)
-    try:
-        update = telebot.types.Update.de_json(raw.decode('utf-8'))
-        print(f"Update parsed, message: {update.message}", flush=True)
-        bot.process_new_updates([update])
-        print(f"Processed OK", flush=True)
+            print(f"Reply sent to {chat_id}", flush=True)
     except Exception as e:
         print(f"ERROR: {e}", flush=True)
     return 'ok', 200
