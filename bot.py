@@ -6,6 +6,8 @@ BOT_TOKEN = os.environ.get('BOT_TOKEN', '').strip()
 print(f"BOT_TOKEN loaded: {BOT_TOKEN[:10]}...", flush=True)
 
 bot = telebot.TeleBot(BOT_TOKEN)
+bot.remove_webhook()  # на всякий случай
+
 app = Flask(__name__)
 
 
@@ -33,13 +35,29 @@ def echo(message):
         bot.reply_to(message, f'Ты написал: {message.text}')
 
 
-@app.route('/' + BOT_TOKEN, methods=['POST'])
-def webhook():
+@app.route('/', methods=['POST'])
+def webhook_root():
     raw = request.stream.read()
-    print(f"Webhook hit! Len: {len(raw)}", flush=True)
+    print(f"Webhook on / Len: {len(raw)}", flush=True)
     try:
         update = telebot.types.Update.de_json(raw.decode('utf-8'))
+        print(f"Update parsed, message: {update.message}", flush=True)
         bot.process_new_updates([update])
+        print(f"Processed OK", flush=True)
+    except Exception as e:
+        print(f"ERROR: {e}", flush=True)
+    return 'ok', 200
+
+
+@app.route('/' + BOT_TOKEN, methods=['POST'])
+def webhook_token():
+    raw = request.stream.read()
+    print(f"Webhook on /TOKEN Len: {len(raw)}", flush=True)
+    try:
+        update = telebot.types.Update.de_json(raw.decode('utf-8'))
+        print(f"Update parsed, message: {update.message}", flush=True)
+        bot.process_new_updates([update])
+        print(f"Processed OK", flush=True)
     except Exception as e:
         print(f"ERROR: {e}", flush=True)
     return 'ok', 200
