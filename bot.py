@@ -71,5 +71,18 @@ def show_config():
 
 
 
+
+
+@app.route('/proxy-check')
+def proxy_check():
+    return {
+        'http_proxy': os.environ.get('HTTP_PROXY'),
+        'https_proxy': os.environ.get('HTTPS_PROXY'),
+        'no_proxy': os.environ.get('NO_PROXY'),
+    }
+
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
