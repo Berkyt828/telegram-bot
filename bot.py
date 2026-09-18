@@ -1,17 +1,14 @@
 import os
 import json
-import threading
-import time
 import requests
 import telebot
 from flask import Flask, request
 
 BOT_TOKEN = os.environ.get('BOT_TOKEN', '').strip()
-CHAT_ID = int(os.environ.get('CHAT_ID', '0'))
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
 
-FLAG_FILE = '/tmp/notify_flag.txt'
+LAST_CHAT_FILE = '/tmp/last_chat.txt'
 
 
 def send(chat_id, text):
@@ -29,6 +26,10 @@ def webhook():
         if 'message' in data:
             msg = data['message']
             chat_id = msg['chat']['id']
+
+            with open(LAST_CHAT_FILE, 'w') as f:
+                f.write(str(chat_id))
+
             text = msg.get('text', '')
             name = msg['from'].get('first_name', 'друг')
             if text == '/start':
@@ -48,10 +49,15 @@ def webhook():
 
 @app.route('/notify')
 def notify():
-    # Отправляем сразу же, не через фоновый поток
-    print(f"NOTIFY HIT, sending to {CHAT_ID}", flush=True)
-    result = send(CHAT_ID, 'Кнопка на сайте нажата!')
-    return {'ok': True, 'telegram_response': result}
+    try:
+        with open(LAST_CHAT_FILE) as f:
+            chat_id = int(f.read().strip())
+    except Exception as e:
+        return {'ok': False, 'error': f'no chat file: {e}'}
+
+    print(f"NOTIFY: sending to {chat_id}", flush=True)
+    result = send(chat_id, 'Кнопка на сайте нажата!')
+    return {'ok': True, 'chat_id_used': chat_id, 'telegram_response': result}
 
 
 @app.route('/')
