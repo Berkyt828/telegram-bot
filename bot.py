@@ -51,13 +51,12 @@ def index():
 
 @app.route('/test-ping')
 def test_ping():
-    import requests
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    r = requests.post(url, json={
-        "chat_id": os.environ.get('CHAT_ID'),
-        "text": "Пинг из Render"
-    })
-    return r.text
+    chat_id = int(os.environ.get('CHAT_ID'))
+    try:
+        bot.send_message(chat_id, "Пинг из Render через telebot")
+        return {"ok": True, "method": "telebot"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
 
 
 
