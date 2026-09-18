@@ -61,5 +61,15 @@ def test_ping():
 
 
 
+@app.route('/show-config')
+def show_config():
+    return {
+        'chat_id_in_env': os.environ.get('CHAT_ID'),
+        'chat_id_len': len(os.environ.get('CHAT_ID', '')),
+        'token_len': len(BOT_TOKEN)
+    }
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
