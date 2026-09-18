@@ -12,10 +12,13 @@ LAST_CHAT_FILE = '/tmp/last_chat.txt'
 
 
 def send(chat_id, text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    r = requests.post(url, json={"chat_id": chat_id, "text": text})
-    print(f"SEND to {chat_id}: {r.status_code} {r.text}", flush=True)
-    return r.text
+    try:
+        bot.send_message(chat_id, text)
+        print(f"SEND OK to {chat_id}", flush=True)
+        return "ok"
+    except Exception as e:
+        print(f"SEND ERR to {chat_id}: {e}", flush=True)
+        return str(e)
 
 
 @app.route('/webhook', methods=['POST'])
