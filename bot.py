@@ -2,6 +2,7 @@ import os
 import json
 import threading
 import time
+import requests
 import telebot
 from flask import Flask, request
 
@@ -14,9 +15,10 @@ FLAG_FILE = '/tmp/notify_flag.txt'
 
 
 def send(chat_id, text):
-    import requests
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, json={"chat_id": chat_id, "text": text})
+    r = requests.post(url, json={"chat_id": chat_id, "text": text})
+    print(f"SEND to {chat_id}: {r.status_code} {r.text}", flush=True)
+    return r.text
 
 
 @app.route('/webhook', methods=['POST'])
@@ -29,7 +31,6 @@ def webhook():
             chat_id = msg['chat']['id']
             text = msg.get('text', '')
             name = msg['from'].get('first_name', 'друг')
-
             if text == '/start':
                 send(chat_id, f'Привет, {name}! 👋')
             elif text == '/help':
@@ -41,33 +42,16 @@ def webhook():
             elif text:
                 send(chat_id, f'Ты написал: {text}')
     except Exception as e:
-        print(f"ERROR: {e}", flush=True)
+        print(f"WEBHOOK ERROR: {e}", flush=True)
     return 'ok', 200
 
 
-@app.route('/notify', methods=['GET', 'POST'])
+@app.route('/notify')
 def notify():
-    with open(FLAG_FILE, 'w') as f:
-        f.write('1')
-    return {'ok': True, 'message': 'flag set'}
-
-
-def background_worker():
-    """Раз в 5 секунд проверяем флаг и, если он есть, шлём сообщение."""
-    while True:
-        time.sleep(5)
-        try:
-            if os.path.exists(FLAG_FILE):
-                with open(FLAG_FILE) as f:
-                    flag = f.read().strip()
-                if flag == '1':
-                    os.remove(FLAG_FILE)
-                    send(CHAT_ID, 'Кнопка на сайте нажата!')
-        except Exception as e:
-            print(f"BG ERROR: {e}", flush=True)
-
-
-threading.Thread(target=background_worker, daemon=True).start()
+    # Отправляем сразу же, не через фоновый поток
+    print(f"NOTIFY HIT, sending to {CHAT_ID}", flush=True)
+    result = send(CHAT_ID, 'Кнопка на сайте нажата!')
+    return {'ok': True, 'telegram_response': result}
 
 
 @app.route('/')
