@@ -49,5 +49,17 @@ def index():
     return 'Bot is running', 200
 
 
+@app.route('/test-ping')
+def test_ping():
+    import requests
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    r = requests.post(url, json={
+        "chat_id": os.environ.get('CHAT_ID'),
+        "text": "Пинг из Render"
+    })
+    return r.text
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
