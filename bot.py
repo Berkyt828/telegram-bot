@@ -1,4 +1,5 @@
 import os
+import json
 import telebot
 from flask import Flask, request
 
@@ -19,7 +20,13 @@ def webhook():
     raw = request.stream.read()
     print(f"Webhook hit! Len: {len(raw)}", flush=True)
     try:
-        data = __import__('json').loads(raw.decode('utf-8'))
+        data = json.loads(raw.decode('utf-8'))
+
+        # Сохраняем chat_id из последнего сообщения
+        if 'message' in data:
+            with open('/tmp/last_chat.txt', 'w') as f:
+                f.write(str(data['message']['chat']['id']))
+
         if 'message' in data:
             msg = data['message']
             chat_id = msg['chat']['id']
@@ -49,6 +56,15 @@ def index():
     return 'Bot is running', 200
 
 
+@app.route('/last-chat')
+def last_chat():
+    try:
+        with open('/tmp/last_chat.txt') as f:
+            return {'last_chat_id': f.read().strip()}
+    except Exception as e:
+        return {'error': str(e)}
+
+
 @app.route('/test-ping')
 def test_ping():
     chat_id = int(os.environ.get('CHAT_ID'))
@@ -57,7 +73,6 @@ def test_ping():
         return {"ok": True, "method": "telebot"}
     except Exception as e:
         return {"ok": False, "error": str(e)}
-
 
 
 @app.route('/show-config')
@@ -69,9 +84,6 @@ def show_config():
     }
 
 
-
-
-
 @app.route('/proxy-check')
 def proxy_check():
     return {
@@ -79,8 +91,6 @@ def proxy_check():
         'https_proxy': os.environ.get('HTTPS_PROXY'),
         'no_proxy': os.environ.get('NO_PROXY'),
     }
-
-
 
 
 if __name__ == '__main__':
