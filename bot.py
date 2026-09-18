@@ -56,11 +56,15 @@ def notify():
         with open(LAST_CHAT_FILE) as f:
             chat_id = int(f.read().strip())
     except Exception as e:
-        return {'ok': False, 'error': f'no chat file: {e}'}
+        return {'ok': False, 'error': f'no chat file: {e}'}, 200, {
+            'Access-Control-Allow-Origin': '*'
+        }
 
     print(f"NOTIFY: sending to {chat_id}", flush=True)
     result = send(chat_id, 'Кнопка на сайте нажата!')
-    return {'ok': True, 'chat_id_used': chat_id, 'telegram_response': result}
+    return {'ok': True, 'chat_id_used': chat_id, 'telegram_response': result}, 200, {
+        'Access-Control-Allow-Origin': '*'
+    }
 
 
 @app.route('/')
